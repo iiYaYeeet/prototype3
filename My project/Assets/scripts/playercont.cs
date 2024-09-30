@@ -1,16 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 using Cursor = UnityEngine.Cursor;
 using Debug = System.Diagnostics.Debug;
+using GameObject = UnityEngine.GameObject;
 
 public class playercont : MonoBehaviour
 {
     //comps
     public Rigidbody RB;
+    public CanvasGroup cg;
+    public AudioSource AS;
+    public AudioClip AC;
     //floats
-    public float MouseSensitivity = 3;
+    public float MouseSensitivity = 2;
     public float WalkSpeed = 10;
     //headbob stuff
     public float transitionSpeed = 10f;
@@ -21,6 +26,8 @@ public class playercont : MonoBehaviour
     public Camera Eyes;
     public Vector3 camPos;
     public Vector3 restPosition;
+    public List<GameObject> gameobs;
+    public bool moving;
     
     void Awake()
     {
@@ -53,9 +60,24 @@ public class playercont : MonoBehaviour
                 camPos = newPosition;
             }
 
+            if (Input.GetKeyDown(KeyCode.W) && moving == false || Input.GetKeyDown(KeyCode.A) && moving == false || Input.GetKeyDown(KeyCode.S) && moving == false ||
+                Input.GetKeyDown(KeyCode.D) && moving == false)
+            {
+                AS.PlayOneShot(AC);
+                moving = true;
+            }
+            if (Input.GetKeyUp(KeyCode.W) || Input.GetKeyUp(KeyCode.A) || Input.GetKeyUp(KeyCode.S) ||
+                Input.GetKeyUp(KeyCode.D))
+            {
+                AS.Stop();
+                moving = false;
+            }
             Eyes.transform.localPosition = camPos;
             if (timer > Mathf.PI * 2) //completed a full cycle on the unit circle. Reset to 0 to avoid bloated values.
+            {
                 timer = 0;
+                AS.PlayOneShot(AC);
+            }
             //get mousexy
             float xRot = Input.GetAxis("Mouse X") * MouseSensitivity;
             float yRot = -Input.GetAxis("Mouse Y") * MouseSensitivity;
@@ -102,6 +124,21 @@ public class playercont : MonoBehaviour
                 //plug back in
                 move = new Vector3(move.x, RB.velocity.y, move.z);
                 RB.velocity = move;
+            }
+
+            foreach (GameObject G in gameobs)
+            {
+                if (Vector3.Distance(G.transform.position, transform.position)<25)
+                {
+                    float e = Mathf.Abs(Vector3.Distance(G.transform.position, transform.position));
+                    float s = Mathf.InverseLerp(50, 20, e);
+                    cg.alpha = s;
+                }
+            }
+
+            if (cg.alpha >= 1f)
+            {
+                SceneManager.LoadScene("Scenes/SampleScene");
             }
     }
 }
